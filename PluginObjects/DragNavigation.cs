@@ -16,11 +16,11 @@ public class DragNavigation : MonoBehaviour
     private void Update()
     {
         RaycastHit hit = new RaycastHit();
-        Ray ray = new Ray( transform.position, new Vector3(0, 0, 5f));
+        Ray ray = new Ray(transform.position, new Vector3(0, 0, 5f));
         Debug.DrawRay(ray.origin, ray.direction);
-        if ( dragging )
+        if (dragging)
         {
-            if( Physics.SphereCast( ray, 0.2f, out hit ) )
+            if (Physics.SphereCast(ray, 0.2f, out hit))
             {
                 if (hit.collider.gameObject && hit.collider.CompareTag("slot"))
                 {
@@ -68,14 +68,20 @@ public class DragNavigation : MonoBehaviour
     {
         dragging = false;
 
-        if ( potentialSlot != null && !potentialSlot.GetComponent<GameBoardSlot>().isOccupied )
+        if (potentialSlot != null && !potentialSlot.GetComponent<GameBoardSlot>().isOccupied)
         {
             // Setting up the position of the dragged object to the slot position
             transform.position = potentialSlot.transform.position;
 
             // Informing slot about object it has to snap
-            potentialSlot.GetComponent<GameBoardSlot>().HandleSnap( true, gameObject );
+            potentialSlot.GetComponent<GameBoardSlot>().HandleSnap(true, gameObject);
             GetComponent<BoxCollider2D>().enabled = false;
+            GameBoard board = FindObjectOfType<GameBoard>();
+            if( board)
+            {
+                board.CheckBoard();
+                board.BumpMovesCounter();
+            }
         }
         else
         {

@@ -8,12 +8,16 @@ public class GameBoardSlot : MonoBehaviour
 
     //[HideInInspector]
     public bool isOccupied;
+
+    public bool beenChecked;
+
     //[HideInInspector]
     public GameObject objInSlot;
 
-    [HideInInspector]
+
+    //[HideInInspector]
     public int slotRowPos;
-    [HideInInspector]
+    //[HideInInspector]
     public int slotColPos;
 
     private void Awake()
@@ -27,10 +31,10 @@ public class GameBoardSlot : MonoBehaviour
         ResetSlot();
     }
 
-    public void SetBoardPosition(int rowPos, int colPos)
+    public void SetBoardPosition(int colPos, int rowPos )
     {
-        slotRowPos = rowPos;
         slotColPos = colPos;
+        slotRowPos = rowPos;        
     }
 
     public void HandleSnap( bool snap, GameObject obj )
@@ -52,6 +56,7 @@ public class GameBoardSlot : MonoBehaviour
     {
         objInSlot = null;
         isOccupied = false;
+        beenChecked = false;
     }
 
     public void ClearSlot()

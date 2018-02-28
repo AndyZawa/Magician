@@ -22,7 +22,7 @@ public class TilesManager : MonoBehaviour
 
     public static Types.TileType RandomizeTileType()
     {
-        float randomizedType = Random.Range( 0, System.Enum.GetValues(typeof(Types.TileType)).Length);   
+        float randomizedType = Random.Range(0, System.Enum.GetValues(typeof(Types.TileType)).Length);
         return (Types.TileType)randomizedType; ;
     }
 

@@ -6,7 +6,7 @@ public class Tile : MonoBehaviour
 {
     public Types.TileType tileType    { get; set; }
     public Sprite tileSprite;
-    public bool beenChecked;
+    public bool afterTransfer;
 
     private void Awake()
     {

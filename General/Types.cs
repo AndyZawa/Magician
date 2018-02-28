@@ -11,4 +11,14 @@ public class Types : MonoBehaviour
         FIRE,
         EARTH
     }
+
+    public enum LaneMovementType
+    {
+        LEFT,
+        RIGHT,
+        UP,
+        DOWN,
+    }
 }
+
+
