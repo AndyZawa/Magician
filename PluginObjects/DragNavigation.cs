@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,6 +9,12 @@ public class DragNavigation : MonoBehaviour
     private Vector2 startPos;
 
     private bool dragging;
+
+    public delegate void TilesManagerEventHandler();
+    public event TilesManagerEventHandler InformTilesManager;
+
+    public delegate void GameBoardEventHandler();
+    public event GameBoardEventHandler InformGameBoard;
 
     private Vector2 distance;
     private float posX;
@@ -35,6 +42,24 @@ public class DragNavigation : MonoBehaviour
         }
     }
 
+    public void OnInformTilesManager()
+    {
+        Debug.Log("DUPA");
+        InformTilesManager();
+    }
+
+    public void OnInformGameBoard()
+    {
+        Debug.Log("GameBoard Informed");
+        InformGameBoard();
+    }
+
+    // Check if the picked tile is the same as the one in the current slot
+    private bool IsTileIn(GameObject slot, GameObject tile)
+    {
+        return slot.GetComponent<GameBoardSlot>().objInSlot == tile.GetComponent<Tile>().gameObject;
+    }
+
     private void OnMouseDown()
     {
         startPos = transform.position;
@@ -48,12 +73,8 @@ public class DragNavigation : MonoBehaviour
         {
             potentialSlot.GetComponent<GameBoardSlot>().HandleSnap(false, gameObject);
         }
-    }
 
-    // Check if the picked tile is the same as the one in the current slot
-    private bool IsTileIn(GameObject slot, GameObject tile)
-    {
-        return slot.GetComponent<GameBoardSlot>().objInSlot == tile.GetComponent<Tile>().gameObject;
+        FindObjectOfType<GameBoard>().SetDraggedTile(this);
     }
 
     private void OnMouseDrag()
@@ -76,16 +97,15 @@ public class DragNavigation : MonoBehaviour
             // Informing slot about object it has to snap
             potentialSlot.GetComponent<GameBoardSlot>().HandleSnap(true, gameObject);
             GetComponent<BoxCollider2D>().enabled = false;
-            GameBoard board = FindObjectOfType<GameBoard>();
-            if( board)
-            {
-                board.CheckBoard();
-                board.BumpMovesCounter();
-            }
+
+            OnInformTilesManager();
+            OnInformGameBoard();
         }
         else
         {
             transform.position = startPos;
         }
     }
+
+
 }

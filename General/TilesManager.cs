@@ -7,6 +7,9 @@ public class TilesManager : MonoBehaviour
     public Tile tilePrefab;
     public Sprite[] possibleSprites;
 
+    private bool gameIsOn = false;
+    private Tile spawnedTile;
+
     public static Dictionary< Types.TileType, Sprite > tileTypesDictionary;
 
     private void Awake()
@@ -33,10 +36,21 @@ public class TilesManager : MonoBehaviour
         return newSprite;
     }
 
+    public void Subscribe(DragNavigation drag)
+    {
+        drag.InformTilesManager += new DragNavigation.TilesManagerEventHandler(CreateNewTile);
+    }
+
+    public void StartTileGeneration()
+    {
+        CreateNewTile();
+    }
+
     public void CreateNewTile()
     {
         Vector2 newPos = new Vector3( 0.5f, -4.2f, 0 );
-        Tile newTile = Instantiate( tilePrefab, newPos, Quaternion.identity);
+        spawnedTile = Instantiate( tilePrefab, newPos, Quaternion.identity);
+        Subscribe( spawnedTile.GetComponent<DragNavigation>() );
     }
 }
 

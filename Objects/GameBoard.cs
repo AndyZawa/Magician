@@ -7,7 +7,13 @@ public class GameBoard : MonoBehaviour
     public int rowSize;
     public int columnSize;
     public int movesCounter;
+    public int movesThreshold;
     public GameBoardSlot slotPrefab;
+
+    public delegate void DragNavigationEventHandler();
+    public event DragNavigationEventHandler GetDraggedTile;
+
+    public DragNavigation draggedTile;
 
     //private BoardLane[] rows;
     //private BoardLane[] columns;
@@ -69,6 +75,18 @@ public class GameBoard : MonoBehaviour
         return new Vector3((x - columnSize / 2), (y - rowSize / 2) - 1, 1f);
     }
 
+    public void SubscribeOnInformGameBoard( DragNavigation drag )
+    {
+        drag.InformGameBoard += new DragNavigation.GameBoardEventHandler(CheckBoard);
+        drag.InformGameBoard += new DragNavigation.GameBoardEventHandler(BumpMovesCounter);
+    }
+
+    public void SetDraggedTile( DragNavigation drag )
+    {
+        draggedTile = drag;
+        SubscribeOnInformGameBoard( draggedTile );
+    }
+
     public void ResetBoard()
     {
         for (int x = 0; x < rowSize; x++)
@@ -89,7 +107,7 @@ public class GameBoard : MonoBehaviour
             for (int y = 0; y < columnSize; y++)
             {
                 GameBoardSlot tempSlot = GetSlot(x, y);
-                if (tempSlot.isOccupied)
+                if ( tempSlot && tempSlot.isOccupied)
                 {
                     CheckValidNeighbours(tempSlot, ref connectedSlots);
                     if( AnySlotsCleared( connectedSlots ) )
@@ -216,16 +234,42 @@ public class GameBoard : MonoBehaviour
     public void BumpMovesCounter()
     {
         movesCounter++;
+        if( movesCounter == movesThreshold )
+        {
+            int R = Random.Range(0, rowSize - 1);
+
+            MoveRow(R, Types.LaneMovementType.RIGHT);
+            movesCounter = 0;
+        }
     }
 
-
-    public void MoveRow( int rowIndex )
+    public void MoveRow( int rowIndex, Types.LaneMovementType movType )
     {
+       for (int x = columnSize - 1; x >= 0; x--)
+        {
+            if( x == columnSize - 1 )
+            {
+                boardSize[x, rowIndex].ClearSlot();
+            }
+            else if( x + 1 < columnSize && boardSize[x, rowIndex].isOccupied )
+            { 
+                MoveTile( boardSize[x, rowIndex], boardSize[x + 1, rowIndex] );
+            }
+        }
 
+        CheckBoard();
+    }
+
+    public void MoveTile( GameBoardSlot from, GameBoardSlot to )
+    {
+        to.objInSlot = from.objInSlot;
+        to.objInSlot.gameObject.transform.position = to.transform.position;
+        to.isOccupied = true;
+
+        from.ResetSlot();
     }
 
     public void MoveColumn( int columnIndex )
     {
-
     }
 }
