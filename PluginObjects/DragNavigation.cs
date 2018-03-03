@@ -74,7 +74,11 @@ public class DragNavigation : MonoBehaviour
             potentialSlot.GetComponent<GameBoardSlot>().HandleSnap(false, gameObject);
         }
 
-        FindObjectOfType<GameBoard>().SetDraggedTile(this);
+        GameObject board = GameObject.FindGameObjectWithTag(GameConsts.GAME_BOARD_TAG);
+        if (board)
+        {
+            board.GetComponent<GameBoard>().SetDraggedTile(this);
+        }
     }
 
     private void OnMouseDrag()
@@ -106,6 +110,4 @@ public class DragNavigation : MonoBehaviour
             transform.position = startPos;
         }
     }
-
-
 }

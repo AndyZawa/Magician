@@ -14,8 +14,8 @@ public class Types : MonoBehaviour
 
     public enum LaneMovementType
     {
-        LEFT,
         RIGHT,
+        LEFT,
         UP,
         DOWN,
     }
