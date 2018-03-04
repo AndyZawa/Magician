@@ -7,7 +7,6 @@ public class TilesManager : MonoBehaviour
     public Tile tilePrefab;
     public Sprite[] possibleSprites;
 
-    private bool gameIsOn = false;
     private Tile spawnedTile;
 
     public static Dictionary< Types.TileType, Sprite > tileTypesDictionary;

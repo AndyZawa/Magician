@@ -8,13 +8,18 @@ public class GameBoard : MonoBehaviour
     public int columnSize;
     public int movesCounter;
     public int movesThreshold;
+
+    public int tileEventsRequired;
+    public int tileEventsCatched;
+
     public GameBoardSlot slotPrefab;
 
-    public List<LaneMovementOrder> movementOrders;
+    public Queue<LaneMovementOrder> movOrders;
 
     public DragNavigation draggedTile;
 
     private GameBoardSlot[,] boardSize;
+
 
     private void Update()
     {
@@ -29,8 +34,7 @@ public class GameBoard : MonoBehaviour
         boardSize = new GameBoardSlot[columnSize, rowSize];
         InitializeBoard();
 
-        movementOrders = new List<LaneMovementOrder>();
-        movementOrders.Add( GameManager.CreateLaneMovementOrder() );
+        movOrders = new Queue<LaneMovementOrder>();
     }
 
     private void InitializeBoard()
@@ -59,10 +63,43 @@ public class GameBoard : MonoBehaviour
         return new Vector3((x - columnSize / 2), (y - rowSize / 2) - 1, 1f);
     }
 
-    public void SubscribeOnInformGameBoard( DragNavigation drag )
+    public void SubscribeOnInformGameBoard(DragNavigation drag)
     {
         drag.InformGameBoard += new DragNavigation.GameBoardEventHandler(CheckBoard);
         drag.InformGameBoard += new DragNavigation.GameBoardEventHandler(BumpMovesCounter);
+    }
+
+    public void SubscribeOnTileMovementEnded(Tile tile)
+    {
+        tile.TileMovementEnded += new Tile.TileEventHandler(IncreaseTileEventCounter);
+        tile.TileMovementEnded += new Tile.TileEventHandler(CheckOrderExecution);
+    }
+
+    public void IncreaseTileEventCounter()
+    {
+        tileEventsCatched++;
+    }
+
+    public void CheckOrderExecution()
+    {
+        if (tileEventsCatched >= tileEventsRequired)
+        {
+            DestroyCurrentOrder();
+
+            ResetEventCounter();
+
+            if (movOrders.Count != 0)
+            {
+                Execute();
+            }
+        }
+    }
+
+    private void DestroyCurrentOrder()
+    {
+        LaneMovementOrder order = movOrders.Dequeue();
+        order.DestroyArrow();
+        Destroy(order);
     }
 
     public void SetDraggedTile( DragNavigation drag )
@@ -81,8 +118,6 @@ public class GameBoard : MonoBehaviour
             }
         }
     }
-
-
 
     #region Core Mechanics
         #region Finding neighbours
@@ -228,16 +263,20 @@ public class GameBoard : MonoBehaviour
                     switch (movType)
                     {
                         case Types.LaneMovementType.RIGHT:
-                            #region MOVING LANE RIGHT
+                            #region MOVING LANE RIGHT                            
                             for (int x = columnSize - 1; x >= 0; x--)
                             {
-                                if (x == columnSize - 1)
+                                if (boardSize[x, rowIndex].isOccupied)
                                 {
-                                    boardSize[x, rowIndex].ClearSlot();
-                                }
-                                else if (x + 1 < columnSize && boardSize[x, rowIndex].isOccupied)
-                                {
-                                    MoveTile(boardSize[x, rowIndex], boardSize[x + 1, rowIndex]);
+                                    if (x == columnSize - 1)
+                                    {
+                                        SubscribeOnTileMovementEnded(boardSize[x, rowIndex].objInSlot.GetComponent<Tile>());
+                                        boardSize[x, rowIndex].ProcessEventAndClearSlot();
+                                    }
+                                    else if ( x + 1 < columnSize )
+                                    {
+                                        MoveTile(boardSize[x, rowIndex].objInSlot, boardSize[x, rowIndex], boardSize[x + 1, rowIndex]);
+                                    }
                                 }
                             }
                             #endregion
@@ -246,13 +285,17 @@ public class GameBoard : MonoBehaviour
                             #region MOVING LANE LEFT
                             for (int x = 0; x < columnSize; x++)
                             {
-                                if ( x == 0 )
+                                if (boardSize[x, rowIndex].isOccupied)
                                 {
-                                    boardSize[x, rowIndex].ClearSlot();
-                                }
-                                else if (x < columnSize && boardSize[x, rowIndex].isOccupied)
-                                {
-                                    MoveTile(boardSize[x, rowIndex], boardSize[x - 1, rowIndex]);
+                                    if (x == 0)
+                                    {
+                                        SubscribeOnTileMovementEnded(boardSize[x, rowIndex].objInSlot.GetComponent<Tile>());
+                                        boardSize[x, rowIndex].ProcessEventAndClearSlot();
+                                    }
+                                    else if (x < columnSize )
+                                    {
+                                        MoveTile(boardSize[x, rowIndex].objInSlot, boardSize[x, rowIndex], boardSize[x - 1, rowIndex]);
+                                    }
                                 }
                             }
                             #endregion
@@ -261,13 +304,17 @@ public class GameBoard : MonoBehaviour
                             #region MOVING LANE UP
                             for (int x = rowSize - 1; x >= 0; x--)
                             {
-                                if (x == rowSize - 1)
+                                if (boardSize[columnIndex, x].isOccupied)
                                 {
-                                    boardSize[columnIndex, x].ClearSlot();
-                                }
-                                else if (x + 1 < columnSize && boardSize[columnIndex, x].isOccupied)
-                                {
-                                    MoveTile(boardSize[columnIndex, x], boardSize[columnIndex, x + 1]);
+                                    if (x == rowSize - 1)
+                                    {
+                                        SubscribeOnTileMovementEnded(boardSize[columnIndex, x].objInSlot.GetComponent<Tile>());
+                                        boardSize[columnIndex, x].ProcessEventAndClearSlot();
+                                    }
+                                    else if (x + 1 < rowSize )
+                                    {
+                                        MoveTile(boardSize[columnIndex, x].objInSlot, boardSize[columnIndex, x], boardSize[columnIndex, x + 1]);    
+                                    }
                                 }
                             }
                             #endregion
@@ -276,13 +323,17 @@ public class GameBoard : MonoBehaviour
                             #region MOVING LANE DOWN
                             for (int x = 0; x < rowSize; x++)
                             {
-                                if (x == 0)
+                                if (boardSize[columnIndex, x].isOccupied)
                                 {
-                                    boardSize[columnIndex, x].ClearSlot();
-                                }
-                                else if (x < columnSize && boardSize[columnIndex, x].isOccupied)
-                                {
-                                    MoveTile(boardSize[columnIndex, x], boardSize[columnIndex, x - 1]);
+                                    if (x == 0 )
+                                    {
+                                        SubscribeOnTileMovementEnded(boardSize[columnIndex, x].objInSlot.GetComponent<Tile>());
+                                        boardSize[columnIndex, x].ProcessEventAndClearSlot();
+                                    }
+                                    else if (x + 1 < rowSize)
+                                    {
+                                        MoveTile(boardSize[columnIndex, x].objInSlot, boardSize[columnIndex, x], boardSize[columnIndex, x - 1]);    
+                                    }
                                 }
                             }
                             #endregion
@@ -292,10 +343,14 @@ public class GameBoard : MonoBehaviour
                     //CheckBoard();
                 }
 
-                public void MoveTile(GameBoardSlot from, GameBoardSlot to)
+                public void MoveTile( GameObject tile, GameBoardSlot from, GameBoardSlot to)
                 {
+                    Tile newTile = tile.GetComponent<Tile>();
+                    SubscribeOnTileMovementEnded( newTile );
+                    newTile.SetDestination(to.transform.position);
+                    newTile.SetTileInMotion(true);
+
                     to.objInSlot = from.objInSlot;
-                    to.objInSlot.gameObject.transform.position = to.transform.position;
                     to.isOccupied = true;
 
                     from.ResetSlot();
@@ -304,40 +359,109 @@ public class GameBoard : MonoBehaviour
 
     #endregion
 
-    public void ExecuteLaneMovementOrders( List<LaneMovementOrder> orders )
+   
+    public int CountTilesInLane( int colIndex, int rowIndex, Types.LaneMovementType movType )
     {
-        foreach (LaneMovementOrder order in orders)
+        int counter = 0;
+        bool isRow;
+
+        switch( movType )
         {
-            MoveLane(order.columnToMove, order.rowToMove, order.movementType);     
+            case Types.LaneMovementType.RIGHT:
+            case Types.LaneMovementType.LEFT:
+                isRow = true;
+                break;
+            case Types.LaneMovementType.UP:
+            case Types.LaneMovementType.DOWN:
+                isRow = false;
+                break;
+            default:
+                Debug.Log("Error! Wrong movement type!");
+                return -1;
         }
 
-        for (int i = movementOrders.Count - 1; i >= 0; i--)
+        if( isRow )
         {
-            movementOrders[i].DestroyArrow();
-            Destroy( movementOrders[i] );
+            for( int x = 0; x < columnSize; x++ )
+            {
+                if( boardSize[ x, rowIndex ].isOccupied )
+                {
+                    counter++;
+                }
+            }
         }
+        else
+        {
+            for( int x = 0; x < rowSize; x++ )
+            {
+                if( boardSize[ colIndex, x ].isOccupied )
+                {
+                    counter++;
+                }
+            }
+        }
+        
 
-        movementOrders.Clear();
+        return counter;
+    }
+
+    public void Execute()
+    {
+        ExecuteLaneMovementOrder( movOrders.Peek() );
+    }
+
+    public void ResetEventCounter()
+    {
+        tileEventsRequired = 0;
+        tileEventsCatched = 0;
+    }
+
+    public void ExecuteLaneMovementOrder( LaneMovementOrder order)
+    {
+        // MOVING LANE
+        tileEventsRequired = CountTilesInLane(order.columnToMove, order.rowToMove, order.movementType);
+
+        // Proceed moving tiles only if any been found
+        if (tileEventsRequired != 0)
+        {
+            MoveLane(order.columnToMove, order.rowToMove, order.movementType);
+        }
+        else
+        {
+            CheckOrderExecution();
+        }
     }
 
     public void BumpMovesCounter()
     { 
-        movesCounter++;
+        //movesCounter++;
         if( movesCounter >= movesThreshold )
         {
-            ExecuteLaneMovementOrders(movementOrders);
-            ResetCounter();
+            Execute();
+            ResetMovesCounter();
         }        
     }
 
-    private void ResetCounter()
+    private void ResetMovesCounter() 
     {
         movesCounter = 0;
     }
 
-    public void TEMP_TEST()
+    public void TEMP_TEST_A()
     {
-        movementOrders.Add( GameManager.CreateLaneMovementOrder() );        
+        RequestLaneOrder();
     }
-       
+
+    public void TEMP_TEST_B()
+    {
+        if( movOrders.Count != 0 )
+        {
+            Execute();
+        }
+    }
+        
+    public void RequestLaneOrder()
+    {
+        movOrders.Enqueue( GameManager.CreateLaneMovementOrder() );
+    }  
 }

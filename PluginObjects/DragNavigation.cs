@@ -44,7 +44,6 @@ public class DragNavigation : MonoBehaviour
 
     public void OnInformTilesManager()
     {
-        Debug.Log("DUPA");
         InformTilesManager();
     }
 

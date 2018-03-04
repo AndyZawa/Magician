@@ -6,6 +6,11 @@ public class GameManager : MonoBehaviour
 {
     public static float offsetValue = 0.65f;
 
+    private void Start()
+    {
+        StartGame();
+    }
+
     public static LaneMovementOrder CreateLaneMovementOrder()
     {
         int movementType;
@@ -35,7 +40,6 @@ public class GameManager : MonoBehaviour
                 movementType = GameConsts.GAME_LOGIC_INVALID;
                 break;
         }
-
 
         Vector3 arrowPos = GetArrowPosition(columnToMove, rowToMove, (Types.LaneMovementType)movementType);
 
@@ -109,5 +113,11 @@ public class GameManager : MonoBehaviour
         newRot = new Vector3(0, 0, rotVal);
 
         return newRot;
+    }
+
+    public static void StartGame()
+    {
+        FindObjectOfType<TilesManager>().StartTileGeneration();
+        FindObjectOfType<GameBoard>().RequestLaneOrder();
     }
 }

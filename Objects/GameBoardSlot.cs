@@ -59,8 +59,15 @@ public class GameBoardSlot : MonoBehaviour
         beenChecked = false;
     }
 
+    public void ProcessEventAndClearSlot()
+    {
+        objInSlot.GetComponent<Tile>().OnTileMovementEnded();
+        ClearSlot();
+    }
+
     public void ClearSlot()
     {
+
         if (objInSlot != null)
         {
             Destroy(objInSlot.gameObject);
