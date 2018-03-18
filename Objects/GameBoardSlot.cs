@@ -14,7 +14,6 @@ public class GameBoardSlot : MonoBehaviour
     //[HideInInspector]
     public GameObject objInSlot;
 
-
     //[HideInInspector]
     public int slotRowPos;
     //[HideInInspector]
@@ -59,6 +58,29 @@ public class GameBoardSlot : MonoBehaviour
         beenChecked = false;
     }
 
+    public void CollapseTile( Types.LaneMovementType direction )
+    {
+        Vector3 collapseEndPoint = GetBoardSlotBorder(this, direction, true);
+        objInSlot.GetComponent<Tile>().ProceedCollapse(direction, collapseEndPoint);
+        ResetSlot();
+    }
+
+    public void UncollapseTile( Types.LaneMovementType direction, GameBoardSlot transferTo, Tile tile )
+    {
+        Vector3 uncollapseEndPoint = GetBoardSlotBorder(transferTo, direction, false);
+        tile.SetUncollapsedTile(uncollapseEndPoint, direction);
+
+        transferTo.objInSlot = tile.gameObject;
+        transferTo.isOccupied = true;
+        transferTo.objInSlot.GetComponent<Tile>().ProceedUncollapse(direction, transferTo.transform.position);
+    }
+
+
+    public Tile GetTile()
+    {
+        return objInSlot.GetComponent<Tile>();
+    }
+
     public void ProcessEventAndClearSlot()
     {
         objInSlot.GetComponent<Tile>().OnTileMovementEnded();
@@ -67,12 +89,38 @@ public class GameBoardSlot : MonoBehaviour
 
     public void ClearSlot()
     {
-
         if (objInSlot != null)
         {
-            Destroy(objInSlot.gameObject);
+            objInSlot.GetComponent<Tile>().SetTileDestroy( GameConsts.TILE_DESTROYING_DELAY );
         }
 
         ResetSlot();
+    }
+
+    private Vector3 GetBoardSlotBorder(GameBoardSlot slot, Types.LaneMovementType dir, bool collapse)
+    {
+        Vector3 startPos = slot.transform.position;
+        int dirMult = (collapse) ? -1 : 1;
+
+        switch (dir)
+        {
+            case Types.LaneMovementType.LEFT:
+                startPos += new Vector3((slot.slotSprite.bounds.size.x / 2) * dirMult, 0, 0);
+                break;
+            case Types.LaneMovementType.RIGHT:
+                startPos -= new Vector3((slot.slotSprite.bounds.size.x / 2) * dirMult, 0, 0);
+                break;
+            case Types.LaneMovementType.UP:
+                startPos -= new Vector3(0, (slot.slotSprite.bounds.size.y / 2) * dirMult, 0);
+                break;
+            case Types.LaneMovementType.DOWN:
+                startPos += new Vector3(0, (slot.slotSprite.bounds.size.y / 2) * dirMult, 0);
+                break;
+            default:
+                startPos = Vector3.zero;
+                break;
+        }
+
+        return startPos;
     }
 }
