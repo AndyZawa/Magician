@@ -6,10 +6,15 @@ public class Types : MonoBehaviour
 {
     public enum TileType
     {
-        AIR,
-        WATER,
-        FIRE,
-        EARTH
+        BLUE,
+        GREEN,
+        RED,     
+        YELLOW,
+        PURPLE,
+        ORANGE,
+        PINK,
+        DARKGREEN,
+        BROWN
     }
 
     public enum LaneMovementType
@@ -19,6 +24,12 @@ public class Types : MonoBehaviour
         UP,
         DOWN,
     }
+
+    public enum GameBoardSlotBorder
+    {
+        RIGHT,
+        LEFT,
+        UP,
+        DOWN
+    }
 }
-
-

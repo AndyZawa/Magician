@@ -103,6 +103,8 @@ public class DragNavigation : MonoBehaviour
 
             OnInformTilesManager();
             OnInformGameBoard();
+
+            MovesTracker.UpdateMovesTracker();
         }
         else
         {

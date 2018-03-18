@@ -4,120 +4,118 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public static float offsetValue = 0.65f;
+    // VARIABLES
+    public static int MovesCounter {get; set;}
+    public static int Score { get; set; }
 
+    public static int difficultyBumpThreshold;
+
+    private static int colorsCount;
+    private static int ordersCount;
+
+    //PROPERTIES
+    public static int ColorsCount
+    {
+        get { return colorsCount; }
+        set
+        {
+            if ((colorsCount + 1) > TilesManager.tileTypesDictionary.Count )
+            {
+                Debug.Log("All colors in play! ");
+                return;
+            }
+            else
+            {
+                colorsCount = value;
+            }
+        }
+    }
+
+    public static int OrdersCount
+    {
+        get { return ordersCount;}
+        set
+        {
+            if( (ordersCount + 1) > GameConsts.GAME_BOARD_MAX_REQUESTS_AT_ONCE )
+            {
+                Debug.Log("Maximum order amount!");
+                return;
+            }
+            else
+            {
+                ordersCount = value;
+            }
+        }
+    }
+
+
+    // METHODS
     private void Start()
     {
         StartGame();
+
+        FindObjectOfType<TilesManager>().StartTileGeneration();
     }
 
-    public static LaneMovementOrder CreateLaneMovementOrder()
+    public static LaneMovementOrder CreateLaneMovementOrder( int colToMove, int rowToMove, Types.LaneMovementType dirToMove, int orderNumber )
     {
-        int movementType;
-        int rowToMove;
-        int columnToMove;
+        GameObject newArrow = ArrowManager.SpawnArrowForLane(colToMove, rowToMove, dirToMove, orderNumber);
 
-        movementType = Random.Range(0, System.Enum.GetValues(typeof(Types.LaneMovementType)).Length);
-
-        switch ((Types.LaneMovementType)movementType)
-        {
-            case Types.LaneMovementType.RIGHT:
-            case Types.LaneMovementType.LEFT:
-                // Getting random ROW
-                rowToMove = Random.Range(0, GameConsts.GAME_BOARD_ROWS);
-                columnToMove = GameConsts.GAME_LOGIC_INVALID;
-                break;
-            case Types.LaneMovementType.UP:
-            case Types.LaneMovementType.DOWN:
-                // Getting random COLUMN
-                columnToMove = Random.Range(0, GameConsts.GAME_BOARD_COLUMNS);
-                rowToMove = GameConsts.GAME_LOGIC_INVALID;
-                break;
-            default:
-                Debug.Log("ERROR: Wrong random in BumpMovesCounter");
-                rowToMove = GameConsts.GAME_LOGIC_INVALID;
-                columnToMove = GameConsts.GAME_LOGIC_INVALID;
-                movementType = GameConsts.GAME_LOGIC_INVALID;
-                break;
-        }
-
-        Vector3 arrowPos = GetArrowPosition(columnToMove, rowToMove, (Types.LaneMovementType)movementType);
-
-        GameObject newArrow = ArrowManager.SpawnArrow(arrowPos, GetArrowRotation((Types.LaneMovementType)movementType));
-
-        LaneMovementOrder newOrder = new LaneMovementOrder( columnToMove, rowToMove, (Types.LaneMovementType)movementType, newArrow );
+        LaneMovementOrder newOrder = new LaneMovementOrder(colToMove, rowToMove, dirToMove, newArrow );
         return newOrder;
-    }
-
-    public static Vector3 GetArrowPosition( int col, int row, Types.LaneMovementType dir )
-    {
-        GameBoard board = GameObject.FindGameObjectWithTag(GameConsts.GAME_BOARD_TAG).GetComponent<GameBoard>();
-        GameBoardSlot slot;
-        Vector3 pos, offset;
-
-        switch ( dir )
-        {
-            case Types.LaneMovementType.RIGHT:
-                slot = board.GetSlot(GameConsts.GAME_BOARD_COLUMNS - 1, row);
-                offset = new Vector3(offsetValue, 0, 0);
-                break;
-            case Types.LaneMovementType.LEFT:
-                slot = board.GetSlot(0, row);
-                offset = new Vector3( -offsetValue, 0, 0);
-                break;
-            case Types.LaneMovementType.UP:
-                slot = board.GetSlot(col, GameConsts.GAME_BOARD_ROWS - 1);
-                offset = new Vector3( 0, offsetValue, 0 );
-                break;
-            case Types.LaneMovementType.DOWN:
-                slot = board.GetSlot(col, 0 );
-                offset = new Vector3(0, -offsetValue, 0);                
-                break;
-            default:
-                pos = new Vector3(0, 0, 0);
-                slot = null;
-                offset = new Vector3(0, 0, 0);
-                Debug.Log("GetPositionForArrow: ERROR! No slot selected, returning 0,0,0 position for arrow!");
-                break;
-        }
-
-        pos = slot.transform.position + offset;
-
-        return pos;
-    }
-
-    public static Vector3 GetArrowRotation( Types.LaneMovementType dir )
-    {
-        Vector3 newRot;
-        float rotVal;
-
-        switch (dir)
-        {
-            case Types.LaneMovementType.RIGHT:
-                rotVal = 0;
-                break;
-            case Types.LaneMovementType.LEFT:
-                rotVal = 180;
-                break;
-            case Types.LaneMovementType.UP:
-                rotVal = 90;
-                break;
-            case Types.LaneMovementType.DOWN:
-                rotVal = 270;
-                break;
-            default:
-                rotVal = 0;
-                break;
-        }
-
-        newRot = new Vector3(0, 0, rotVal);
-
-        return newRot;
     }
 
     public static void StartGame()
     {
-        FindObjectOfType<TilesManager>().StartTileGeneration();
-        FindObjectOfType<GameBoard>().RequestLaneOrder();
+        Score = 0;
+        ColorsCount = GameConsts.GAME_LOGIC_START_COLORS_COUNT;
+        OrdersCount = GameConsts.GAME_LOGIC_START_ORDER_AMOUNT;      
+
+        difficultyBumpThreshold = GameConsts.THRESHOLD_FOR_DIFFICULTY_BUMP;
+
+        MovesCounter = GameConsts.GAME_LOGIC_MOVES_THRESHOLD;
+        MovesTracker.UpdateMovesTracker();
+        ScoreTracker.UpdateScoreTracker();
+    }
+
+    public static void AddScore( int score )
+    {
+        Score += score;
+        ScoreTracker.UpdateScoreTracker();
+    }
+
+    public static void IncreaseDifficulty()
+    {
+        difficultyBumpThreshold += GameConsts.THRESHOLD_FOR_DIFFICULTY_BUMP;
+
+        //  FIRST COLOR DIFFICULTY BUMP - ADDING NEW COLORS
+        if ( ColorsCount < GameConsts.FIRST_COLOR_DIFFICULTY_CHANGE )
+        {
+            ColorsCount++;
+            TilesManager.AddNewColor();
+            return;
+        }
+
+        // FIRST ORDER DIFFICULTY BUMP - ADDING ADDITIONAL ORDER TO PROCEED
+        if (OrdersCount < GameConsts.FIRST_ORDER_DIFFICULTY_CHANGE)
+        {
+            OrdersCount++;
+            return;
+        }
+
+        // SECOND COLOR DIFFICULTY BUMP - ADDING NEW COLORS
+        if (ColorsCount < GameConsts.SECOND_COLOR_DIFFICULTY_CHANGE)
+        {
+            ColorsCount++;
+            TilesManager.AddNewColor();
+            return;
+        }
+
+        // SECOND ORDER DIFFICULTY BUMP - ADDING ADDITIONAL ORDER TO PROCEED
+        if (OrdersCount < GameConsts.SECOND_ORDER_DIFFICULTY_CHANGE)
+        {
+            OrdersCount++;
+            return;
+        }
     }
 }
